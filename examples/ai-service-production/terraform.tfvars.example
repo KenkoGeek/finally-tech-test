@@ -1,0 +1,125 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Project Configuration
+project_name = "ai-service"
+environment  = "production"
+
+# ECS Configuration - Production sizing
+ecs_cluster_id = "arn:aws:ecs:us-east-1:123456789012:cluster/ai-platform-production"
+task_cpu       = "2048"
+task_memory    = "4096"
+desired_count  = 5
+launch_type    = "FARGATE"
+force_new_deployment = false
+
+# Container Configuration
+image_registry = "123456789012.dkr.ecr.us-east-1.amazonaws.com"
+image_tag      = "v1.2.3"  # Stable production version
+
+# API Container - Production sizing
+api_cpu    = 1536
+api_memory = 3072
+api_port   = 8080
+health_check_path = "/health"
+
+# Redis Container - Production sizing
+redis_image  = "redis:7-alpine"
+redis_cpu    = 512
+redis_memory = 1024
+redis_port   = 6379
+
+# Network Configuration - Multi-AZ for production
+vpc_id = "vpc-12345678"
+subnet_ids = [
+  "subnet-12345678",  # us-east-1a
+  "subnet-87654321",  # us-east-1b
+  "subnet-11223344"   # us-east-1c
+]
+security_group_ids = [
+  "sg-12345678",  # ECS tasks security group
+  "sg-87654321"   # Additional production security group
+]
+# Load Balancer Configuration - Production
+alb_arn          = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/ai-service-prod/1234567890123456"
+alb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/ai-service-prod/1234567890123456/1234567890123456"
+health_check_path = "/health"
+
+# ALB Listener Rules - Production with multiple rules
+alb_listener_rules = {
+  "ai-api" = {
+    "api-rule" = {
+      priority = 100
+      conditions = [
+        {
+          type   = "path_pattern"
+          values = ["/api/*"]
+        }
+      ]
+    },
+    "health-rule" = {
+      priority = 200
+      conditions = [
+        {
+          type   = "path_pattern"
+          values = ["/health"]
+        }
+      ]
+    },
+    "admin-rule" = {
+      priority = 300
+      conditions = [
+        {
+          type   = "path_pattern"
+          values = ["/admin/*"]
+        },
+        {
+          type   = "host_header"
+          values = ["admin.ai-service.company.com"]
+        }
+      ]
+    }
+  }
+}
+assign_public_ip = false
+
+# Auto Scaling Configuration - Production settings
+min_capacity         = 5
+max_capacity         = 20
+cpu_threshold_high   = "80"
+cpu_threshold_low    = "30"
+cpu_evaluation_period = 3
+cpu_period           = 300
+cooldown_period      = 600  # 10 minutes for production stability
+
+# Application Configuration
+log_level = "WARN"  # Production log level
+api_key_secret_arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:ai-service/api-keys-AbCdEf"
+
+# Logging Configuration - Extended retention for production
+log_retention_days = 90
+kms_key_id         = "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+
+# Tags - Production specific
+tags = {
+  Environment = "production"
+  Project     = "ai-platform"
+  Service     = "ai-service"
+  ManagedBy   = "terraform"
+  Repository  = "ai-platform-infrastructure"
+  Owner       = "platform-team"
+  CostCenter  = "engineering"
+  Compliance  = "sox"
+  Backup      = "required"
+  Monitoring  = "critical"
+}
+
+# Container Environment Variables
+container_environment_variables = {
+  "NODE_ENV"     = "staging"
+  "PORT"         = "8080"
+  "DATABASE_URL" = "SECRETS"
+  "API_KEY"      = "SECRETS"
+  "LOG_LEVEL"    = "debug"
+  "REDIS_URL"    = "redis://staging-redis:6379"
+}
