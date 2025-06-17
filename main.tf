@@ -324,10 +324,6 @@ resource "aws_ecs_service" "ecs_service" {
   tags = merge(var.tags, {
     "Name" = "${var.project_name}-${local.environment_map[var.environment]}-${each.key}-service"
   })
-
-  depends_on = [
-    aws_lb_listener.nlb
-  ]
 }
 
 # Scaling Target for each ECS Service
