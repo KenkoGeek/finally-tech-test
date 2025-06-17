@@ -14,7 +14,7 @@ provider "aws" {
 
 # AI Service ECS Module - Production Configuration
 module "ai_service" {
-  source = "git@github.com:KenkoGeek/finally-tech-test.git"
+  source = "https://github.com/KenkoGeek/finally-tech-test.git"
 
   # Project Configuration
   project_name = var.project_name
