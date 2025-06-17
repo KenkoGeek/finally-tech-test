@@ -14,7 +14,7 @@ provider "aws" {
 
 # AI Service ECS Module - Production Configuration
 module "ai_service" {
-  source = "../../"
+  source = "git@github.com:KenkoGeek/finally-tech-test.git"
 
   # Project Configuration
   project_name = var.project_name
@@ -40,12 +40,10 @@ module "ai_service" {
   # Network Configuration - Multi-AZ
   vpc_id           = var.vpc_id
   subnets          = var.subnet_ids
-  alb_arn          = var.alb_arn
+  alb_listener_rules          = var.alb_listener_rules
   assign_public_ip = var.assign_public_ip
-  security_groups  = var.security_group_ids
 
   # Load Balancer Configuration
-  load_balancer_type = "alb"
   alb_listener_arn   = var.alb_listener_arn
   health_check_path  = var.health_check_path
 
