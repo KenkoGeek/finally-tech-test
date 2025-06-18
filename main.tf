@@ -89,40 +89,13 @@ resource "aws_security_group" "main" {
     }
   }
 
-  dynamic "egress" {
-    for_each = var.security_group_rules_cidrs
-    content {
-      from_port   = egress.value.from_port
-      to_port     = egress.value.to_port
-      protocol    = egress.value.protocol
-      cidr_blocks = [egress.value.cidr]
-      description = egress.value.description
-    }
-  }
-
-  dynamic "egress" {
-    for_each = var.security_group_rules_security_group_id
-    content {
-      from_port       = egress.value.from_port
-      to_port         = egress.value.to_port
-      protocol        = egress.value.protocol
-      security_groups = [egress.value.sec_group_id]
-      description     = egress.value.description
-    }
-  }
-
-  dynamic "egress" {
-    for_each = var.security_group_rules_prefix_list_id
-    content {
-      from_port       = egress.value.from_port
-      to_port         = egress.value.to_port
-      protocol        = egress.value.protocol
-      prefix_list_ids = [egress.value.prefix_list_id]
-      description     = egress.value.description
-    }
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
   }
 }
-
 
 # ECS task Role
 resource "aws_iam_role" "task_role" {
