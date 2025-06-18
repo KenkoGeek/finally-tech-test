@@ -3,7 +3,7 @@
 # =============================================================================
 project_name = "finally-ai"
 aws_region   = "us-east-1"
-environment  = "development"
+environment  = "staging"
 
 # =============================================================================
 # CONTAINER CONFIGURATION
@@ -23,7 +23,7 @@ container_environment_variables = {}
 task_family            = "ai-service-nginx"
 task_cpu              = "256"
 task_memory           = "512"
-desired_count         = 1
+desired_count         = 2
 launch_type           = "FARGATE"
 network_mode          = "awsvpc"
 force_new_deployment  = true
@@ -54,7 +54,7 @@ security_group_rules_security_group_id  = {
 # =============================================================================
 # APPLICATION LOAD BALANCER CONFIGURATION
 # =============================================================================
-alb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:841162703316:loadbalancer/net/myprojectmy-workload-dev/18a9a0132121ceeb"
+alb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:012345678901:listener/app/intrepidus-canis/d375a6635a70c95c/fed4c4c4d1024fda"
 
 # ALB Listener Rules - Service name must match container_name
 alb_listener_rules = {
@@ -90,8 +90,8 @@ target_type          = "ip"
 # =============================================================================
 # AUTO SCALING CONFIGURATION
 # =============================================================================
-scale_target_min_capacity = 1
-scale_target_max_capacity = 3
+scale_target_min_capacity = 2
+scale_target_max_capacity = 4
 max_cpu_threshold         = 70
 min_cpu_threshold         = 30
 max_cpu_evaluation_period = "3"
@@ -103,7 +103,7 @@ cooldown                 = 60
 # =============================================================================
 # IAM CONFIGURATION
 # =============================================================================
-exec_role_arn    = "arn:aws:iam::118583598438:role/finally-exec-ecs-task-role"
+exec_role_arn    = "arn:aws:iam::012345678901:role/finally-exec-ecs-task-role"
 managed_policies = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"]
 
 task_role_policy = <<EOF
@@ -129,10 +129,23 @@ task_role_policy = <<EOF
     {
       "Effect": "Allow",
       "Action": [
-        "application-autoscaling:*",
-        "ecs:DescribeServices",
-        "ecs:UpdateService",
-        "iam:CreateServiceLinkedRole"
+          "application-autoscaling:*",
+          "ecs:DescribeServices",
+          "ecs:UpdateService",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:DisableAlarmActions",
+          "cloudwatch:EnableAlarmActions",
+          "iam:CreateServiceLinkedRole",
+          "sns:CreateTopic",
+          "sns:Subscribe",
+          "sns:Get*",
+          "sns:List*"
       ],
       "Resource": ["*"]
     },

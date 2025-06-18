@@ -1,53 +1,64 @@
-# AWS Configuration
-aws_region = "us-east-1"
-
-# Project Configuration
-project_name = "ai-service"
+# =============================================================================
+# PROJECT CONFIGURATION
+# =============================================================================
+project_name = "finally-ai"
+aws_region   = "us-east-1"
 environment  = "production"
 
-# ECS Configuration - Production sizing
-ecs_cluster_id = "arn:aws:ecs:us-east-1:123456789012:cluster/ai-platform-production"
-task_cpu       = "2048"
-task_memory    = "4096"
-desired_count  = 5
-launch_type    = "FARGATE"
-force_new_deployment = false
+# =============================================================================
+# CONTAINER CONFIGURATION
+# =============================================================================
+container_name                  = "finally-ai-nginx"
+container_image                 = "public.ecr.aws/nginx/nginx:1.27-bookworm"
+container_cpu                   = 256
+container_memory                = 512
+container_port                  = 80
+host_port                       = 80
+container_essential             = true
+container_environment_variables = {}
 
-# Container Configuration
-image_registry = "123456789012.dkr.ecr.us-east-1.amazonaws.com"
-image_tag      = "v1.2.3"  # Stable production version
+# =============================================================================
+# ECS TASK AND SERVICE CONFIGURATION
+# =============================================================================
+task_family            = "ai-service-nginx"
+task_cpu              = "256"
+task_memory           = "512"
+desired_count         = 2
+launch_type           = "FARGATE"
+network_mode          = "awsvpc"
+force_new_deployment  = true
+compatibilities       = ["FARGATE"]
 
-# API Container - Production sizing
-api_cpu    = 1536
-api_memory = 3072
-api_port   = 8080
-health_check_path = "/health"
+# =============================================================================
+# NETWORKING CONFIGURATION
+# =============================================================================
+vpc_id           = "vpc-06b0d877472bb7b25"
+subnets          = ["subnet-0814bea6ac1164577", "subnet-059fa1e7230f87911"]
+assign_public_ip = false
 
-# Redis Container - Production sizing
-redis_image  = "redis:7-alpine"
-redis_cpu    = 512
-redis_memory = 1024
-redis_port   = 6379
+# =============================================================================
+# SECURITY GROUP RULES
+# =============================================================================
+security_group_rules_cidrs              = {}
+security_group_rules_prefix_list_id     = {}
+security_group_rules_security_group_id  = {
+  "http" = {
+    "description"   = "Allow HTTP from ALB resource"
+    "from_port"     = 80
+    "protocol"      = "tcp"
+    "sec_group_id"  = "sg-0775401e1dc4120a6"
+    "to_port"       = 80
+  }
+}
 
-# Network Configuration - Multi-AZ for production
-vpc_id = "vpc-12345678"
-subnet_ids = [
-  "subnet-12345678",  # us-east-1a
-  "subnet-87654321",  # us-east-1b
-  "subnet-11223344"   # us-east-1c
-]
-security_group_ids = [
-  "sg-12345678",  # ECS tasks security group
-  "sg-87654321"   # Additional production security group
-]
-# Load Balancer Configuration - Production
-alb_arn          = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/ai-service-prod/1234567890123456"
-alb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/ai-service-prod/1234567890123456/1234567890123456"
-health_check_path = "/health"
+# =============================================================================
+# APPLICATION LOAD BALANCER CONFIGURATION
+# =============================================================================
+alb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:012345678901:listener/app/intrepidus-canis/d375a6635a70c95c/fed4c4c4d1024fda"
 
-# ALB Listener Rules - Production with multiple rules
+# ALB Listener Rules - Service name must match container_name
 alb_listener_rules = {
-  "ai-api" = {
+  "finally-ai-nginx" = {
     "api-rule" = {
       priority = 100
       conditions = [
@@ -65,61 +76,110 @@ alb_listener_rules = {
           values = ["/health"]
         }
       ]
-    },
-    "admin-rule" = {
-      priority = 300
-      conditions = [
-        {
-          type   = "path_pattern"
-          values = ["/admin/*"]
-        },
-        {
-          type   = "host_header"
-          values = ["admin.ai-service.company.com"]
-        }
-      ]
     }
   }
 }
-assign_public_ip = false
 
-# Auto Scaling Configuration - Production settings
-min_capacity         = 5
-max_capacity         = 20
-cpu_threshold_high   = "80"
-cpu_threshold_low    = "30"
-cpu_evaluation_period = 3
-cpu_period           = 300
-cooldown_period      = 600  # 10 minutes for production stability
+# =============================================================================
+# HEALTH CHECK CONFIGURATION
+# =============================================================================
+health_check_path     = "/health"
+target_group_protocol = "HTTP"
+target_type          = "ip"
 
-# Application Configuration
-log_level = "WARN"  # Production log level
-api_key_secret_arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:ai-service/api-keys-AbCdEf"
+# =============================================================================
+# AUTO SCALING CONFIGURATION
+# =============================================================================
+scale_target_min_capacity = 2
+scale_target_max_capacity = 6
+max_cpu_threshold         = 70
+min_cpu_threshold         = 30
+max_cpu_evaluation_period = "3"
+max_cpu_period           = "60"
+min_cpu_evaluation_period = "3"
+min_cpu_period           = "60"
+cooldown                 = 60
 
-# Logging Configuration - Extended retention for production
-log_retention_days = 90
-kms_key_id         = "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+# =============================================================================
+# IAM CONFIGURATION
+# =============================================================================
+exec_role_arn    = "arn:aws:iam::012345678901:role/finally-exec-ecs-task-role"
+managed_policies = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"]
 
-# Tags - Production specific
-tags = {
-  Environment = "production"
-  Project     = "ai-platform"
-  Service     = "ai-service"
-  ManagedBy   = "terraform"
-  Repository  = "ai-platform-infrastructure"
-  Owner       = "platform-team"
-  CostCenter  = "engineering"
-  Compliance  = "sox"
-  Backup      = "required"
-  Monitoring  = "critical"
+task_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeTasks",
+        "ecs:UpdateTaskExecution"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+          "application-autoscaling:*",
+          "ecs:DescribeServices",
+          "ecs:UpdateService",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:DisableAlarmActions",
+          "cloudwatch:EnableAlarmActions",
+          "iam:CreateServiceLinkedRole",
+          "sns:CreateTopic",
+          "sns:Subscribe",
+          "sns:Get*",
+          "sns:List*"
+      ],
+      "Resource": ["*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": ["arn:aws:s3:::finally-ai-models-dev"]
+    }
+  ]
 }
+EOF
 
-# Container Environment Variables
-container_environment_variables = {
-  "NODE_ENV"     = "staging"
-  "PORT"         = "8080"
-  "DATABASE_URL" = "SECRETS"
-  "API_KEY"      = "SECRETS"
-  "LOG_LEVEL"    = "debug"
-  "REDIS_URL"    = "redis://staging-redis:6379"
-}
+# =============================================================================
+# SERVICE DISCOVERY CONFIGURATION
+# =============================================================================
+namespace              = "finally"
+use_existing_namespace = false
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+log_retention_days = 7
+kms_key_id        = null
+
+# =============================================================================
+# MONITORING AND NOTIFICATIONS
+# =============================================================================
+sns_topic_arn = ""
+
+# =============================================================================
+# RESOURCE TAGS
+# =============================================================================
+tags = {}
