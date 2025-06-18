@@ -108,6 +108,7 @@ resource "aws_cloudwatch_log_group" "ecs_log_group" {
   tags = merge(var.tags, {
     "Name" = "${var.project_name}-${local.environment_map[var.environment]}-log-group"
   })
+  # checkov:skip=CKV_AWS_338: "Should be flexible by using the variable for costs optimization"
 }
 
 # ECS task Role
@@ -131,6 +132,9 @@ resource "aws_iam_role" "task_role" {
 resource "aws_iam_policy" "task_role_policy" {
   name   = "ecs-${var.project_name}-${local.environment_map[var.environment]}-task-policy"
   policy = var.task_role_policy
+  # checkov:skip=CKV_AWS_289: "It's define by variable"
+  # checkov:skip=CKV_AWS_290: "It's define by variable"
+  # checkov:skip=CKV_AWS_355: "It's define by variable"
 }
 
 resource "aws_iam_role_policy_attachment" "task_role_attachment" {
@@ -154,6 +158,7 @@ resource "aws_ecs_task_definition" "ecs_task" {
   execution_role_arn       = aws_iam_role.task_role.arn
   task_role_arn            = var.exec_role_arn
   tags                     = var.tags
+  # checkov:skip=CKV_AWS_378: "Depends on the container/app configuration or compliance requirements"
 }
 
 # ALB Target Groups 
