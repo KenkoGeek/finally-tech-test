@@ -341,6 +341,7 @@ variable "target_group_protocol" {
 }
 
 variable "alb_listener_rules" {
+  description = "ALB listener rules configuration. IMPORTANT: The service names (keys) in this map must match the container names defined in the container_name variable, as they are used for target group mapping."
   type = map(map(object({
     priority = number
     conditions = list(object({
