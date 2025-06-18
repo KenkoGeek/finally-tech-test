@@ -1,4 +1,4 @@
-alb_listener_arn   = "arn:aws:elasticloadbalancing:us-east-1:841162703316:loadbalancer/net/myprojectmy-workload-dev/18a9a0132121ceeb"
+alb_listener_arn   = "arn:aws:elasticloadbalancing:us-east-1:841162703316:loadbalancer/net/myproject-my-workload-dev/18a9a0132121ceeb"
 alb_listener_rules = ""
 assign_public_ip   = false
 aws_region         = "us-east-1"
@@ -14,9 +14,9 @@ container_name                  = "nginx-svc"
 container_port                  = 80
 cooldown                        = 60
 desired_count                   = 1
-ecs_cluster_id                  = "arn:aws:ecs:us-east-1:841162703316:cluster/myprojectmy-workload-dev-ecs-cluster"
+ecs_cluster_id                  = "arn:aws:ecs:us-east-1:841162703316:cluster/myproject-my-workload-dev-ecs-cluster"
 environment                     = "development"
-exec_role_arn                   = "arn:aws:iam::841162703316:role/ecs-myprojectmy-workload-dev-task-exec-iam-role"
+exec_role_arn                   = "arn:aws:iam::841162703316:role/ecs-myproject-my-workload-dev-task-exec-iam-role"
 force_new_deployment            = true
 health_check_path               = "/health"
 host_port                       = 80
