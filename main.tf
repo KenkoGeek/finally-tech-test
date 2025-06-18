@@ -158,7 +158,6 @@ resource "aws_ecs_task_definition" "ecs_task" {
   execution_role_arn       = aws_iam_role.task_role.arn
   task_role_arn            = var.exec_role_arn
   tags                     = var.tags
-  # checkov:skip=CKV_AWS_378: "Depends on the container/app configuration or compliance requirements"
 }
 
 # ALB Target Groups 
@@ -183,6 +182,7 @@ resource "aws_lb_target_group" "alb" {
   tags = merge(var.tags, {
     "Name" = "${var.project_name}-${local.environment_map[var.environment]}-${local.container_definitions[count.index].name}-alb-tg"
   })
+  # checkov:skip=CKV_AWS_378: "Depends on the container/app configuration or compliance requirements"
 }
 
 resource "aws_lb_listener_rule" "main_alb" {
