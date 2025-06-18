@@ -89,12 +89,25 @@ resource "aws_security_group" "main" {
     }
   }
 
+  # checkov:skip=CKV_AWS_382: "Is needed by requirement"
   egress {
     from_port        = 0
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
+    description      = "Allow all outbound traffic" 
   }
+}
+
+# CloudWatch Log Group
+resource "aws_cloudwatch_log_group" "ecs_log_group" {
+  name              = "/ecs/${var.project_name}/${local.environment_map[var.environment]}"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = var.kms_key_id
+  
+  tags = merge(var.tags, {
+    "Name" = "${var.project_name}-${local.environment_map[var.environment]}-log-group"
+  })
 }
 
 # ECS task Role
@@ -397,15 +410,4 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
     var.sns_topic_arn != "" ? var.sns_topic_arn : ""
   ])
   tags = var.tags
-}
-
-# CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "ecs_log_group" {
-  name              = "/ecs/${var.project_name}/${local.environment_map[var.environment]}"
-  retention_in_days = var.log_retention_days
-  kms_key_id        = var.kms_key_id
-  
-  tags = merge(var.tags, {
-    "Name" = "${var.project_name}-${local.environment_map[var.environment]}-log-group"
-  })
 }
