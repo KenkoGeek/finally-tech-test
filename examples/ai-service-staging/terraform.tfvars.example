@@ -1,41 +1,64 @@
-# AWS Configuration
-aws_region = "us-east-1"
-
-# Project Configuration
-project_name = "ai-service"
-environment  = "staging"
+# =============================================================================
+# PROJECT CONFIGURATION
+# =============================================================================
+project_name = "finally-ai"
 aws_region   = "us-east-1"
+environment  = "development"
 
-# Container Image Configuration
-image_registry = "123456789012.dkr.ecr.us-east-1.amazonaws.com"
-image_tag      = "v1.0.0"
+# =============================================================================
+# CONTAINER CONFIGURATION
+# =============================================================================
+container_name                  = "finally-ai-nginx"
+container_image                 = "public.ecr.aws/nginx/nginx:1.27-bookworm"
+container_cpu                   = 256
+container_memory                = 512
+container_port                  = 80
+host_port                       = 80
+container_essential             = true
+container_environment_variables = {}
 
-# ECS Configuration
-ecs_cluster_id = "arn:aws:ecs:us-east-1:123456789012:cluster/ai-service-staging"
-task_cpu       = "1024"
-task_memory    = "2048"
-desired_count  = 2
-launch_type    = "FARGATE"
+# =============================================================================
+# ECS TASK AND SERVICE CONFIGURATION
+# =============================================================================
+task_family            = "ai-service-nginx"
+task_cpu              = "256"
+task_memory           = "512"
+desired_count         = 1
+launch_type           = "FARGATE"
+network_mode          = "awsvpc"
+force_new_deployment  = true
+compatibilities       = ["FARGATE"]
 
-# Container Configuration
-api_cpu    = 512
-api_memory = 1024
-api_port   = 8080
+# =============================================================================
+# NETWORKING CONFIGURATION
+# =============================================================================
+vpc_id           = "vpc-06b0d877472bb7b25"
+subnets          = ["subnet-0814bea6ac1164577", "subnet-059fa1e7230f87911"]
+assign_public_ip = false
 
-# Network Configuration
-vpc_id             = "vpc-12345678"
-subnet_ids         = ["subnet-12345678", "subnet-87654321"]
-security_group_ids = ["sg-12345678"]
-assign_public_ip   = false
+# =============================================================================
+# SECURITY GROUP RULES
+# =============================================================================
+security_group_rules_cidrs              = {}
+security_group_rules_prefix_list_id     = {}
+security_group_rules_security_group_id  = {
+  "http" = {
+    "description"   = "Allow HTTP from ALB resource"
+    "from_port"     = 80
+    "protocol"      = "tcp"
+    "sec_group_id"  = "sg-0775401e1dc4120a6"
+    "to_port"       = 80
+  }
+}
 
-# Load Balancer Configuration
-alb_arn          = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/ai-service-staging/1234567890123456"
-alb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/ai-service-staging/1234567890123456/1234567890123456"
-health_check_path = "/health"
+# =============================================================================
+# APPLICATION LOAD BALANCER CONFIGURATION
+# =============================================================================
+alb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:841162703316:loadbalancer/net/myprojectmy-workload-dev/18a9a0132121ceeb"
 
-# ALB Listener Rules
+# ALB Listener Rules - Service name must match container_name
 alb_listener_rules = {
-  "ai-api" = {
+  "finally-ai-nginx" = {
     "api-rule" = {
       priority = 100
       conditions = [
@@ -44,37 +67,106 @@ alb_listener_rules = {
           values = ["/api/*"]
         }
       ]
+    },
+    "health-rule" = {
+      priority = 200
+      conditions = [
+        {
+          type   = "path_pattern"
+          values = ["/health"]
+        }
+      ]
     }
   }
 }
 
-# Auto Scaling Configuration
-min_capacity         = 1
-max_capacity         = 5
-cpu_threshold_high   = 70
-cpu_threshold_low    = 20
-cpu_evaluation_period = 2
-cpu_period           = 300
-cooldown_period      = 300
+# =============================================================================
+# HEALTH CHECK CONFIGURATION
+# =============================================================================
+health_check_path     = "/health"
+target_group_protocol = "HTTP"
+target_type          = "ip"
 
-# Logging Configuration
-log_retention_days = 30
-kms_key_id        = "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+# =============================================================================
+# AUTO SCALING CONFIGURATION
+# =============================================================================
+scale_target_min_capacity = 1
+scale_target_max_capacity = 3
+max_cpu_threshold         = 70
+min_cpu_threshold         = 30
+max_cpu_evaluation_period = "3"
+max_cpu_period           = "60"
+min_cpu_evaluation_period = "3"
+min_cpu_period           = "60"
+cooldown                 = 60
 
-# Tags
-tags = {
-  Environment = "staging"
-  Project     = "ai-service"
-  Owner       = "DevOps Team"
-  CostCenter  = "Engineering"
+# =============================================================================
+# IAM CONFIGURATION
+# =============================================================================
+exec_role_arn    = "arn:aws:iam::118583598438:role/finally-exec-ecs-task-role"
+managed_policies = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"]
+
+task_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeTasks",
+        "ecs:UpdateTaskExecution"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "application-autoscaling:*",
+        "ecs:DescribeServices",
+        "ecs:UpdateService",
+        "iam:CreateServiceLinkedRole"
+      ],
+      "Resource": ["*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": ["arn:aws:s3:::finally-ai-models-dev"]
+    }
+  ]
 }
+EOF
 
-# Container Environment Variables
-container_environment_variables = {
-  "NODE_ENV"     = "staging"
-  "PORT"         = "8080"
-  "DATABASE_URL" = "SECRETS"
-  "API_KEY"      = "SECRETS"
-  "LOG_LEVEL"    = "debug"
-  "REDIS_URL"    = "redis://staging-redis:6379"
-}
+# =============================================================================
+# SERVICE DISCOVERY CONFIGURATION
+# =============================================================================
+namespace              = "finally"
+use_existing_namespace = false
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+log_retention_days = 7
+kms_key_id        = null
+
+# =============================================================================
+# MONITORING AND NOTIFICATIONS
+# =============================================================================
+sns_topic_arn = ""
+
+# =============================================================================
+# RESOURCE TAGS
+# =============================================================================
+tags = {}

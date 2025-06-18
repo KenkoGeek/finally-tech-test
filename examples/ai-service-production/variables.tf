@@ -1,148 +1,347 @@
-# AWS Configuration
+variable "project_name" {
+  type        = string
+  description = "Name of the project"
+  default     = "my-workload"
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.project_name))
+    error_message = "Invalid project name. Please provide a valid name using lowercase letters and hyphens (-)."
+  }
+}
+
 variable "aws_region" {
-  description = "AWS region for deployment"
+  description = "The AWS region to deploy the resources."
   type        = string
   default     = "us-east-1"
 }
 
-# Project Configuration
-variable "project_name" {
-  description = "Name of the project"
-  type        = string
-  default     = "ai-service"
-}
-
 variable "environment" {
-  description = "Environment name (production)"
   type        = string
-  default     = "production"
+  description = "Deployment Environment"
+  default     = "development"
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.environment))
+    error_message = "Invalid environment name. Please provide a valid name using lowercase letters and hyphens (-)."
+  }
+}
+# Security Group
+variable "security_group_rules_cidrs" {
+  description = "Map of security group rules with CIDR block, port, and description"
+  type = map(object({
+    cidr        = string
+    from_port   = number
+    to_port     = number
+    description = string
+    protocol    = string
+  }))
+  default = {
+    ssh = {
+      cidr        = "10.0.0.0/24"
+      from_port   = 22
+      to_port     = 22
+      description = "Allow SSH from spicific CIDR or IP address"
+      protocol    = "tcp"
+    }
+    http = {
+      cidr        = "10.0.0.0/24"
+      from_port   = 80
+      to_port     = 80
+      description = "Allow HTTP from spicific CIDR or IP address"
+      protocol    = "tcp"
+    }
+    https = {
+      cidr        = "10.0.0.0/24"
+      from_port   = 443
+      to_port     = 443
+      description = "Allow HTTPS from spicific CIDR or IP address"
+      protocol    = "tcp"
+    }
+  }
 }
 
-# ECS Configuration
+variable "security_group_rules_security_group_id" {
+  description = "Map of security group rules with Security Group Id, port, and description"
+  type = map(object({
+    sec_group_id = string
+    from_port    = number
+    to_port      = number
+    description  = string
+    protocol     = string
+  }))
+  default = {
+    ssh = {
+      sec_group_id = "sg-091f2edc4c7e88785"
+      from_port    = 22
+      to_port      = 22
+      description  = "Allow SSH from XYZ resource"
+      protocol     = "tcp"
+    }
+    http = {
+      sec_group_id = "sg-0330684950b8346df"
+      from_port    = 443
+      to_port      = 443
+      description  = "Allow HTTP from XYZ resource"
+      protocol     = "tcp"
+    }
+    https = {
+      sec_group_id = "sg-0dcf4141c6f37d67f"
+      from_port    = 443
+      to_port      = 443
+      description  = "Allow HTTPS from XYZ resource"
+      protocol     = "tcp"
+    }
+  }
+}
+
+variable "security_group_rules_prefix_list_id" {
+  description = "Map of security group rules with Prefix List, port, and description"
+  type = map(object({
+    prefix_list_id = string
+    from_port      = number
+    to_port        = number
+    description    = string
+    protocol       = string
+  }))
+  default = {
+    http = {
+      prefix_list_id = "pl-b6a144df"
+      from_port      = 80
+      to_port        = 80
+      description    = "Allow HTTP from Cloudfront"
+      protocol       = "tcp"
+    }
+    https = {
+      prefix_list_id = "pl-b6a144df"
+      from_port      = 443
+      to_port        = 443
+      description    = "Allow HTTPS from Cloudfront"
+      protocol       = "tcp"
+    }
+  }
+}
+
+# ECS
 variable "ecs_cluster_id" {
-  description = "ECS cluster ID/ARN"
+  description = "ECS cluster ID."
   type        = string
+  default     = "arn:aws:ecs:us-east-1:841162703316:cluster/myprojectmy-workload-dev-ecs-cluster"
+}
+
+# ECS Task
+variable "task_family" {
+  description = "Family of the ECS task definition."
+  type        = string
+  default     = "my-workload-nginx"
 }
 
 variable "task_cpu" {
-  description = "CPU units for the task (production sizing)"
+  description = "The number of CPU units for the task."
   type        = string
-  default     = "2048"
+  default     = "512"
 }
 
 variable "task_memory" {
-  description = "Memory for the task (production sizing)"
+  description = "The amount of memory (in MiB) to allocate for the task."
   type        = string
-  default     = "4096"
+  default     = "1024"
 }
 
-variable "desired_count" {
-  description = "Desired number of tasks to run (production)"
-  type        = number
-  default     = 5
-}
-
-variable "launch_type" {
-  description = "ECS launch type"
+variable "network_mode" {
+  description = "The Docker networking mode to use for the containers in the task."
   type        = string
-  default     = "FARGATE"
+  default     = "awsvpc"
 }
 
-variable "force_new_deployment" {
-  description = "Force new deployment"
-  type        = bool
-  default     = false
+variable "compatibilities" {
+  description = "The launch types the task definition is compatible with."
+  type        = list(string)
+  default     = ["FARGATE"]
+}
+
+variable "managed_policies" {
+  description = "List of managed policy ARNs to attach to the ECS task role."
+  type        = list(string)
+  default     = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"]
+}
+
+variable "task_role_policy" {
+  description = "IAM Policy document for the ECS task role in JSON format."
+  type        = string
+  default     = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeTasks",
+        "ecs:UpdateTaskExecution"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+          "application-autoscaling:*",
+          "ecs:DescribeServices",
+          "ecs:UpdateService",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:DisableAlarmActions",
+          "cloudwatch:EnableAlarmActions",
+          "iam:CreateServiceLinkedRole",
+          "sns:CreateTopic",
+          "sns:Subscribe",
+          "sns:Get*",
+          "sns:List*"
+      ],
+      "Resource": ["*"]
+    }
+  ]
+}
+EOF
 }
 
 # Container Configuration
-variable "image_registry" {
-  description = "Docker image registry URL"
+variable "container_name" {
+  description = "Name of the container"
   type        = string
+  default     = "nginx-svc"
 }
 
-variable "image_tag" {
-  description = "Docker image tag (production version)"
+variable "container_image" {
+  description = "Docker image for the container"
   type        = string
+  default     = "public.ecr.aws/nginx/nginx:latest"
 }
 
-# API Container - Production sizing
-variable "api_cpu" {
-  description = "CPU units for API container (production)"
+variable "container_cpu" {
+  description = "CPU units for the container"
   type        = number
-  default     = 1536
+  default     = 256
 }
 
-variable "api_memory" {
-  description = "Memory for API container (production)"
-  type        = number
-  default     = 3072
-}
-
-variable "api_port" {
-  description = "Port for API container"
-  type        = number
-  default     = 8080
-}
-
-variable "health_check_path" {
-  description = "Health check path for API"
-  type        = string
-  default     = "/health"
-}
-
-# Redis Container - Production sizing
-variable "redis_image" {
-  description = "Redis Docker image"
-  type        = string
-  default     = "redis:7-alpine"
-}
-
-variable "redis_cpu" {
-  description = "CPU units for Redis container (production)"
+variable "container_memory" {
+  description = "Memory (in MiB) for the container"
   type        = number
   default     = 512
 }
 
-variable "redis_memory" {
-  description = "Memory for Redis container (production)"
+variable "container_port" {
+  description = "Port that the container exposes"
   type        = number
-  default     = 1024
+  default     = 80
 }
 
-variable "redis_port" {
-  description = "Port for Redis container"
+variable "host_port" {
+  description = "Host port to map to container port"
   type        = number
-  default     = 6379
+  default     = 80
 }
 
-# Network Configuration
+variable "container_essential" {
+  description = "Whether the container is essential"
+  type        = bool
+  default     = true
+}
+
+variable "container_environment_variables" {
+  description = "Map of environment variables for the container"
+  type        = map(string)
+  default     = {}
+}
+
+variable "exec_role_arn" {
+  description = "Execution role ARN."
+  type        = string
+  default     = "arn:aws:iam::841162703316:role/ecs-myprojectmy-workload-dev-task-exec-iam-role"
+}
+
+# ECS Service
+variable "desired_count" {
+  description = "The number of tasks to run."
+  type        = number
+  default     = 1
+}
+
+variable "use_existing_namespace" {
+  description = "Indicates whether to use an existing Service Discovery namespace or create a new one"
+  type        = bool
+  default     = false
+}
+
+variable "namespace" {
+  description = "The app namespace to deploy the resources and local DNS."
+  type        = string
+  default     = "my-workload"
+}
+
+variable "force_new_deployment" {
+  description = "This can be used to update tasks to use a newer Docker image with same image/tag combination (e.g. myimage:latest."
+  type        = bool
+  default     = true
+}
+
+variable "launch_type" {
+  description = "The launch type on which to run your ECS service."
+  type        = string
+  default     = "FARGATE"
+}
+
+variable "subnets" {
+  description = "List of subnet IDs for the service."
+  type        = list(string)
+  default     = ["subnet-0521aa00427d156e0", "subnet-0854fca60e5b9ef64"]
+}
+
+variable "assign_public_ip" {
+  description = "Assign a public IP address to the ECS service."
+  type        = bool
+  default     = false
+}
+
 variable "vpc_id" {
-  description = "VPC ID where resources will be created"
+  description = "VPC ID"
   type        = string
-}
-
-variable "subnet_ids" {
-  description = "List of subnet IDs (production - multiple AZs)"
-  type        = list(string)
-}
-
-variable "security_group_ids" {
-  description = "List of security group IDs"
-  type        = list(string)
-}
-
-variable "alb_arn" {
-  description = "Application Load Balancer ARN"
-  type        = string
+  default     = "vpc-0db92d66d4dd147da"
+  validation {
+    condition     = can(regex("^vpc-[a-f0-9]{8,63}$", var.vpc_id))
+    error_message = "The VPC ID format is invalid. It should follow the pattern 'vpc-XXXXXXXX'."
+  }
 }
 
 variable "alb_listener_arn" {
-  description = "Application Load Balancer listener ARN"
+  description = "ARN ALB Listener."
   type        = string
+  default     = "arn:aws:elasticloadbalancing:us-east-1:841162703316:loadbalancer/net/myprojectmy-workload-dev/18a9a0132121ceeb"
+}
+
+variable "target_type" {
+  description = "Target type: instance, ip, lambda or alb."
+  type        = string
+  default     = "ip"
+}
+
+variable "target_group_protocol" {
+  description = "Protocol for the Target Group: HTTP or HTTPS"
+  type        = string
+  default     = "HTTP"
 }
 
 variable "alb_listener_rules" {
-  description = "ALB listener rules configuration for production"
+  description = "ALB listener rules configuration. IMPORTANT: The service names (keys) in this map must match the container names defined in the container_name variable, as they are used for target group mapping."
   type = map(map(object({
     priority = number
     conditions = list(object({
@@ -151,133 +350,99 @@ variable "alb_listener_rules" {
       key    = optional(string)
     }))
   })))
-  default = {
-    "ai-api" = {
-      "api-rule" = {
-        priority = 100
-        conditions = [
-          {
-            type   = "path_pattern"
-            values = ["/api/*"]
-          }
-        ]
-      },
-      "health-rule" = {
-        priority = 200
-        conditions = [
-          {
-            type   = "path_pattern"
-            values = ["/health"]
-          }
-        ]
-      }
-    }
-  }
 }
 
 variable "health_check_path" {
-  description = "Health check path for ALB target groups"
+  description = "Path health_check ALB"
   type        = string
   default     = "/health"
 }
 
-variable "assign_public_ip" {
-  description = "Assign public IP to tasks"
-  type        = bool
-  default     = false
+# Autoscaling
+variable "max_cpu_threshold" {
+  description = "Threshold for max CPU usage"
+  default     = "85"
+  type        = string
 }
 
-# Auto Scaling Configuration - Production settings
-variable "min_capacity" {
-  description = "Minimum number of tasks (production)"
-  type        = number
+variable "min_cpu_threshold" {
+  description = "Threshold for min CPU usage"
+  default     = "10"
+  type        = string
+}
+
+variable "max_cpu_evaluation_period" {
+  description = "The number of periods over which data is compared to the specified threshold for max cpu metric alarm"
+  default     = "3"
+  type        = string
+}
+
+variable "min_cpu_evaluation_period" {
+  description = "The number of periods over which data is compared to the specified threshold for min cpu metric alarm"
+  default     = "3"
+  type        = string
+}
+
+variable "max_cpu_period" {
+  description = "The period in seconds over which the specified statistic is applied for max cpu metric alarm"
+  default     = "60"
+  type        = string
+}
+
+variable "min_cpu_period" {
+  description = "The period in seconds over which the specified statistic is applied for min cpu metric alarm"
+  default     = "60"
+  type        = string
+}
+
+variable "scale_target_max_capacity" {
+  description = "The max capacity of the scalable target"
   default     = 5
-}
-
-variable "max_capacity" {
-  description = "Maximum number of tasks (production)"
   type        = number
-  default     = 20
 }
 
-variable "cpu_threshold_high" {
-  description = "CPU threshold for scaling up (production)"
-  type        = string
-  default     = "80"
-}
-
-variable "cpu_threshold_low" {
-  description = "CPU threshold for scaling down (production)"
-  type        = string
-  default     = "30"
-}
-
-variable "cpu_evaluation_period" {
-  description = "Number of periods for CPU evaluation"
+variable "scale_target_min_capacity" {
+  description = "The min capacity of the scalable target"
+  default     = 1
   type        = number
-  default     = 3
 }
 
-variable "cpu_period" {
-  description = "Period in seconds for CPU metrics"
+variable "sns_topic_arn" {
+  type        = string
+  description = "The ARN of an SNS topic to send notifications on alarm actions."
+  default     = ""
+}
+
+variable "cooldown" {
+  description = "Cooldown period for scaling actions"
   type        = number
-  default     = 300
-}
-
-variable "cooldown_period" {
-  description = "Cooldown period in seconds (production)"
-  type        = number
-  default     = 600
-}
-
-# Application Configuration
-variable "log_level" {
-  description = "Application log level (production)"
-  type        = string
-  default     = "WARN"
-  validation {
-    condition     = contains(["DEBUG", "INFO", "WARN", "ERROR"], var.log_level)
-    error_message = "Log level must be one of: DEBUG, INFO, WARN, ERROR."
-  }
-}
-
-variable "database_url" {
-  description = "Database connection URL"
-  type        = string
-  sensitive   = true
-}
-
-variable "api_key_secret_arn" {
-  description = "ARN of the secret containing API keys"
-  type        = string
-}
-
-# Logging Configuration
-variable "log_retention_days" {
-  description = "CloudWatch log retention in days (production)"
-  type        = number
-  default     = 90
-}
-
-variable "kms_key_id" {
-  description = "KMS key ID for log encryption"
-  type        = string
-}
-
-# Service Connect
-variable "enable_service_connect" {
-  description = "Enable ECS Service Connect"
-  type        = bool
-  default     = true
+  default     = 60
 }
 
 # Tags
 variable "tags" {
-  description = "Tags to apply to resources"
+  description = "A map of tags to assign to resources."
   type        = map(string)
-  default = {
-    Environment = "production"
-    Project     = "ai-platform"
-    ManagedBy   = "terraform"
+  default     = {}
+}
+
+# Cloudwatch logs 
+variable "log_retention_days" {
+  description = "Number of days to retain CloudWatch logs"
+  type        = number
+  default     = 7
+  validation {
+    condition = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.log_retention_days)
+    error_message = "Log retention days must be a valid CloudWatch retention period."
+  }
+}
+
+variable "kms_key_id" {
+  description = "The ARN of the KMS Key to use when encrypting log data. If not provided, logs will not be encrypted."
+  type        = string
+  default     = null
+  validation {
+    condition = var.kms_key_id == null || can(regex("^arn:aws:kms:[a-z0-9-]+:[0-9]{12}:key/[a-f0-9-]{36}$", var.kms_key_id))
+    error_message = "KMS Key ID must be a valid KMS key ARN format or null."
   }
 }

@@ -296,6 +296,9 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = var.desired_count
   launch_type     = var.launch_type
 
+  # Add explicit dependency on listener rules
+  depends_on = [aws_lb_listener_rule.main_alb]
+
   load_balancer {
     target_group_arn = aws_lb_target_group.alb[lookup(local.target_group_map, each.key)].arn
     container_name   = each.value.name
