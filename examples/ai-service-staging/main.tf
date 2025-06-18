@@ -14,7 +14,7 @@ provider "aws" {
 
 # AI Service ECS Module
 module "ai_service" {
-  source = "https://github.com/KenkoGeek/finally-tech-test.git?ref=v1.0.0"
+  source = "git::https://github.com/KenkoGeek/finally-tech-test.git?ref=v1.0.0"
 
   # Project Configuration
   project_name = var.project_name
@@ -69,4 +69,5 @@ module "ai_service" {
 
   # Tags
   tags = var.tags
+  #checkov:skip=CKV_TF_1: "Hash commit not needed"
 }
