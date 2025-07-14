@@ -418,6 +418,7 @@ For changes to the module itself:
 | ecs_service_names | Names of the ECS Services created |
 | ecs_task_definition_arn | ARN of the ECS Task Definition |
 | sec_group_id | ID of the Security Group |
+| circuit_breaker_alarm_arns | ARNs of the Circuit Breaker CloudWatch Alarms |
 
 ## License
 

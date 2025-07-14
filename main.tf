@@ -290,6 +290,11 @@ resource "aws_ecs_service" "ecs_service" {
   # Add explicit dependency on listener rules
   depends_on = [aws_lb_listener_rule.main_alb]
 
+  deployment_circuit_breaker {
+    enable   = var.circuit_breaker_enabled
+    rollback = var.circuit_breaker_enabled
+  }
+
   load_balancer {
     target_group_arn = aws_lb_target_group.alb[lookup(local.target_group_map, each.key)].arn
     container_name   = each.value.name
@@ -415,4 +420,60 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
     var.sns_topic_arn != "" ? var.sns_topic_arn : ""
   ])
   tags = var.tags
+}
+
+# Circuit Breaker - High Error Rate Alarm
+resource "aws_cloudwatch_metric_alarm" "circuit_breaker_error_rate" {
+  for_each = var.circuit_breaker_enabled ? aws_lb_target_group.alb : {}
+
+  alarm_name          = "${var.project_name}-${local.environment_map[var.environment]}-circuit-breaker-${each.key}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = var.circuit_breaker_evaluation_periods
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = var.circuit_breaker_period
+  statistic           = "Sum"
+  threshold           = var.circuit_breaker_error_threshold
+  treat_missing_data  = "notBreaching"
+  
+  dimensions = {
+    TargetGroup = aws_lb_target_group.alb[each.key].arn_suffix
+  }
+  
+  alarm_actions = compact([
+    var.sns_topic_arn != "" ? var.sns_topic_arn : ""
+  ])
+  
+  tags = merge(var.tags, {
+    "Name" = "${var.project_name}-${local.environment_map[var.environment]}-circuit-breaker-${each.key}"
+    "Type" = "CircuitBreaker"
+  })
+}
+
+# Circuit Breaker - Service Unavailable Alarm
+resource "aws_cloudwatch_metric_alarm" "circuit_breaker_unhealthy_hosts" {
+  for_each = var.circuit_breaker_enabled ? aws_lb_target_group.alb : {}
+
+  alarm_name          = "${var.project_name}-${local.environment_map[var.environment]}-unhealthy-hosts-${each.key}"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = var.circuit_breaker_evaluation_periods
+  metric_name         = "UnHealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = var.circuit_breaker_period
+  statistic           = "Maximum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  
+  dimensions = {
+    TargetGroup = aws_lb_target_group.alb[each.key].arn_suffix
+  }
+  
+  alarm_actions = compact([
+    var.sns_topic_arn != "" ? var.sns_topic_arn : ""
+  ])
+  
+  tags = merge(var.tags, {
+    "Name" = "${var.project_name}-${local.environment_map[var.environment]}-unhealthy-hosts-${each.key}"
+    "Type" = "CircuitBreaker"
+  })
 }

@@ -419,6 +419,31 @@ variable "cooldown" {
   default     = 60
 }
 
+# Circuit Breaker Configuration
+variable "circuit_breaker_enabled" {
+  description = "Enable circuit breaker functionality"
+  type        = bool
+  default     = true
+}
+
+variable "circuit_breaker_error_threshold" {
+  description = "Error rate threshold to trigger circuit breaker (percentage)"
+  type        = number
+  default     = 50
+}
+
+variable "circuit_breaker_evaluation_periods" {
+  description = "Number of periods to evaluate for circuit breaker"
+  type        = number
+  default     = 2
+}
+
+variable "circuit_breaker_period" {
+  description = "Period in seconds for circuit breaker evaluation"
+  type        = number
+  default     = 60
+}
+
 # Tags
 variable "tags" {
   description = "A map of tags to assign to resources."
