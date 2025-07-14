@@ -1,0 +1,119 @@
+alb_listener_arn                   = "arn:aws:elasticloadbalancing:us-east-1:841162703316:loadbalancer/net/myprojectmy-workload-dev/18a9a0132121ceeb"
+alb_listener_rules                 = ""
+assign_public_ip                   = false
+aws_region                         = "us-east-1"
+circuit_breaker_enabled            = true
+circuit_breaker_error_threshold    = 50
+circuit_breaker_evaluation_periods = 2
+circuit_breaker_period             = 60
+compatibilities = [
+  "FARGATE"
+]
+container_cpu                   = 256
+container_environment_variables = {}
+container_essential             = true
+container_image                 = "public.ecr.aws/nginx/nginx:latest"
+container_memory                = 512
+container_name                  = "nginx-svc"
+container_port                  = 80
+cooldown                        = 60
+desired_count                   = 1
+ecs_cluster_id                  = "arn:aws:ecs:us-east-1:841162703316:cluster/myprojectmy-workload-dev-ecs-cluster"
+environment                     = "development"
+exec_role_arn                   = "arn:aws:iam::841162703316:role/ecs-myprojectmy-workload-dev-task-exec-iam-role"
+force_new_deployment            = true
+health_check_path               = "/health"
+host_port                       = 80
+kms_key_id                      = ""
+launch_type                     = "FARGATE"
+log_retention_days              = 7
+managed_policies = [
+  "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"
+]
+max_cpu_evaluation_period = "3"
+max_cpu_period            = "60"
+max_cpu_threshold         = "85"
+min_cpu_evaluation_period = "3"
+min_cpu_period            = "60"
+min_cpu_threshold         = "10"
+namespace                 = "my-workload"
+network_mode              = "awsvpc"
+project_name              = "my-workload"
+scale_target_max_capacity = 5
+scale_target_min_capacity = 1
+security_group_rules_cidrs = {
+  "http": {
+    "cidr": "10.0.0.0/24",
+    "description": "Allow HTTP from spicific CIDR or IP address",
+    "from_port": 80,
+    "protocol": "tcp",
+    "to_port": 80
+  },
+  "https": {
+    "cidr": "10.0.0.0/24",
+    "description": "Allow HTTPS from spicific CIDR or IP address",
+    "from_port": 443,
+    "protocol": "tcp",
+    "to_port": 443
+  },
+  "ssh": {
+    "cidr": "10.0.0.0/24",
+    "description": "Allow SSH from spicific CIDR or IP address",
+    "from_port": 22,
+    "protocol": "tcp",
+    "to_port": 22
+  }
+}
+security_group_rules_prefix_list_id = {
+  "http": {
+    "description": "Allow HTTP from Cloudfront",
+    "from_port": 80,
+    "prefix_list_id": "pl-b6a144df",
+    "protocol": "tcp",
+    "to_port": 80
+  },
+  "https": {
+    "description": "Allow HTTPS from Cloudfront",
+    "from_port": 443,
+    "prefix_list_id": "pl-b6a144df",
+    "protocol": "tcp",
+    "to_port": 443
+  }
+}
+security_group_rules_security_group_id = {
+  "http": {
+    "description": "Allow HTTP from XYZ resource",
+    "from_port": 443,
+    "protocol": "tcp",
+    "sec_group_id": "sg-0330684950b8346df",
+    "to_port": 443
+  },
+  "https": {
+    "description": "Allow HTTPS from XYZ resource",
+    "from_port": 443,
+    "protocol": "tcp",
+    "sec_group_id": "sg-0dcf4141c6f37d67f",
+    "to_port": 443
+  },
+  "ssh": {
+    "description": "Allow SSH from XYZ resource",
+    "from_port": 22,
+    "protocol": "tcp",
+    "sec_group_id": "sg-091f2edc4c7e88785",
+    "to_port": 22
+  }
+}
+sns_topic_arn = ""
+subnets = [
+  "subnet-0521aa00427d156e0",
+  "subnet-0854fca60e5b9ef64"
+]
+tags                   = {}
+target_group_protocol  = "HTTP"
+target_type            = "ip"
+task_cpu               = "512"
+task_family            = "my-workload-nginx"
+task_memory            = "1024"
+task_role_policy       = "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"logs:CreateLogStream\",\n        \"logs:PutLogEvents\"\n      ],\n      \"Resource\": \"arn:aws:logs:*:*:*\"\n    },\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"ecs:DescribeTasks\",\n        \"ecs:UpdateTaskExecution\"\n      ],\n      \"Resource\": \"*\"\n    },\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n          \"application-autoscaling:*\",\n          \"ecs:DescribeServices\",\n          \"ecs:UpdateService\",\n          \"cloudwatch:DescribeAlarms\",\n          \"cloudwatch:PutMetricAlarm\",\n          \"cloudwatch:DeleteAlarms\",\n          \"cloudwatch:DescribeAlarmHistory\",\n          \"cloudwatch:DescribeAlarmsForMetric\",\n          \"cloudwatch:GetMetricStatistics\",\n          \"cloudwatch:ListMetrics\",\n          \"cloudwatch:DisableAlarmActions\",\n          \"cloudwatch:EnableAlarmActions\",\n          \"iam:CreateServiceLinkedRole\",\n          \"sns:CreateTopic\",\n          \"sns:Subscribe\",\n          \"sns:Get*\",\n          \"sns:List*\"\n      ],\n      \"Resource\": [\"*\"]\n    }\n  ]\n}\n"
+use_existing_namespace = false
+vpc_id                 = "vpc-0db92d66d4dd147da"
